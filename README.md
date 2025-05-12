@@ -2,106 +2,203 @@
 
 # Introducción
 
-## 🧱 VProfile Project - Configuración Local (Automatizado)
+## 🧱 VProfile Project - Configuración Local (Aprovisionamiento Automatizado con Vagrant)
 
-### 1.- 🎯 Esta es la versión 2 del proyecto de VProfile. En ésta version, a comparación con la anterior, se automatiza todo el proceso de aprovisionamiento.
+----------
 
+### 📁 Carpeta `vagrant` y scripts por sistema operativo
 
-#### 🎓 Explicación del Aprovisionamiento Automatizado con Vagrant
-
-##### 📁 Carpeta `vagrant` en el repositorio
-
-> **"Automated provisioning"**  
-> Escoge la carpeta según tu sistema operativo:
-
--   💻 **Windows** o **Mac con chip Intel** ➡️ Usa la carpeta estándar.
+-   Dentro del repositorio hay una carpeta llamada `vagrant`.
     
--   🍎 **Mac con chip M1/M2** ➡️ Usa la carpeta específica para ARM.
+-   En ella encontrarás aprovisionamientos automatizados divididos por sistema operativo:
+    
+    -   💻 **Windows y MacOS con chip Intel** → usa la carpeta correspondiente.
+        
+    -   🍎 **MacOS con chip M1 o M2** → usa la otra carpeta disponible.
+        
+
+----------
+
+### 🔍 Exploración del archivo `Vagrantfile`
+
+-   Clona el codigo fuente en VSCode.
+    
+-   Al abrir el archivo `Vagrantfile`, verás que es similar al usado en el aprovisionamiento manual con una diferencia importante:  
+    👉 Cada VM tiene asociado un **script de shell específico** que se ejecutará durante el aprovisionamiento.
     
 
 ----------
 
-#### 🔍 Visualización desde VSCode
+### 🖥️ Scripts de Shell para cada VM
 
-Clona este repositorio y:
+Cada VM cuenta con un script `.sh` en la misma carpeta del `Vagrantfile`:
 
-1.  Abre el proyecto en **VSCode**.
+#### 📦 `mysql.sh` (para DB01)
+
+-   Script simple de Bash que:
     
-2.  Navega a la carpeta de **aprovisionamiento automatizado**.
+    -   Define una variable con la contraseña de la base de datos.
+        
+    -   Instala, inicia y habilita **MariaDB**.
+        
+    -   Clona el código fuente y despliega el esquema SQL.
+        
+    -   Si deseas ejecutar SQL desde shell:
+        
+        ```bash
+        mysql -u usuario -p'contraseña' -e 'COMANDO_SQL'
+        
+        ```
+        
+
+#### 🧠 `memcache.sh`
+
+-   Instalación y habilitación de Memcached.
     
-3.  Revisa el archivo `Vagrantfile`.
+-   Muy similar al script de MySQL.
     
 
-> 💡 _Es muy similar al usado en el aprovisionamiento manual, pero..._
-> 
-> 📌 **Cada VM ahora ejecuta un script adicional automáticamente.**
+#### 🐰 `rabbitmq.sh`
+
+-   Instalación de RabbitMQ.
+    
+-   Incluye la instalación de Erlang, socat, etc.
+    
+-   También se inicia y habilita el servicio.
+    
+
+#### 🧪 `tomcat.sh`
+
+-   🐧 Específico para Ubuntu.
+    
+-   Crea archivos usando `cat <<EOT ... EOT` para evitar abrir editores como `vim`.
+    
+-   Ejecuta:
+    
+    -   Instalación de Tomcat.
+        
+    -   Clonación de código fuente.
+        
+    -   Ejecución de `mvn install`.
+        
+    -   Despliegue del artifact.
+        
+
+#### 🌐 `nginx.sh`
+
+-   Instala NGINX.
+    
+-   Crea el archivo de configuración.
+    
+-   Desactiva el sitio por defecto y activa el nuevo.
+    
+-   Inicia y habilita el servicio.
+    
+----------
+
+## ▶️ Ejecución de `vagrant up`
+
+1.  Abre **Git Bash**.
+    
+2.  Navega al directorio:
+    
+    ```bash
+    cd ruta/al/codigo/vagrant/aprovisionamiento-automatizado
+    ```
+    
+3.  Ejecuta:
+    
+    ```bash
+    vagrant up
+    ```
+    
 
 ----------
 
-#### 📜 Scripts individuales por VM
+### 🚀 Flujo de aprovisionamiento automatizado
 
-Cada VM tiene asociado un **script `.sh`** para su configuración. Ejemplos:
-
--   `DB01` ejecuta 👉 `mysql.sh`
+1.  🔄 **`vagrant up`** inicia la creación de todas las VMs.
     
--   En esa misma carpeta está el archivo `mysql.sh`
+2.  🕒 Espera a que cada máquina esté estable antes de ejecutar su script.
     
+3.  🟢 Se ejecutan los scripts en este orden:
+    
+    -   `mysql.sh` ✅
+        
+    -   `memcache.sh` ✅
+        
+    -   `rabbitmq.sh` ✅ (más lento por `yum update` y dependencias)
+        
+    -   `app01` con build de Maven ✅
+        
+    -   `web01` con NGINX ✅
+        
 
-💬 _“No te preocupes, son scripts de Bash bastante simples.”_
+> ⏳ El tiempo total de ejecución puede variar entre 15 y 30 minutos, dependiendo de tu velocidad de Internet.
 
 ----------
 
-#### 🧪 Revisión de `mysql.sh`
+## 🌐 Validación desde el navegador
 
--   Al inicio está el clásico _shebang_:
-    
+Puedes acceder a la aplicación vía:
 
-```bash
-#!/bin/bash
+```
+http://web01
 ```
 
--   Se declara una variable con la contraseña de MySQL.
-    
--   Se instalan, inician y habilitan servicios como `mariadb`.
-    
--   Luego se clona el código fuente y se ejecutan comandos SQL.
-    
+> O bien, usar la IP estática definida en el `Vagrantfile`.
 
-💡 Puedes usar este comando para ejecutar SQL desde el shell:
-
-```bash
-mysql -u usuario -p contraseña -e "CONSULTA_SQL"
-
-```
+1.  Inicia sesión:
+    
+    -   Usuario: `admin_vp`
+        
+    -   Contraseña: misma usada en el script
+        
+2.  ✅ Valida los componentes:
+    
+    -   Base de datos (MySQL)
+        
+    -   RabbitMQ
+        
+    -   Memcached (se insertan datos en caché y se validan)
+        
 
 ----------
 
-#### 🔥 Configuración de firewall
+## 🧹 Apagar y reiniciar la pila
 
--   Al final del script se incluyen comandos para configurar el firewall.
+-   Detener todas las VMs:
     
+    ```bash
+    vagrant halt
+    ```
+    
+-   Ver el estado:
+    
+    ```bash
+    vagrant status
+    ```
+    
+-   Levantar nuevamente:
+    
+    ```bash
+    vagrant up
+    ```
+    
+
+> ⚠️ El aprovisionamiento solo ocurre la primera vez que se crean las VMs.
+
 ----------
 
-📌 En `tomcat.sh` se usa el comando `cat` para crear archivos de configuración directamente desde el script, ya que no se puede usar el editor VIM al automatizar:
+## 🔁 Conclusión
 
-```bash
-cat <<EOT > /ruta/al/archivo
-(contenido del archivo)
-EOT
-```
+✅ Con un solo comando (`vagrant up`), aprovisionamos toda la pila de forma:
+
+-   🔄 Repetible
+    
+-   ⚙️ Automatizada
+    
+-   🧾 Definida como **infraestructura como código**
+    
 
 ----------
-
-#### 🔁 ¿Qué hace cada script?
-
-1.  Crea archivos de sistema necesarios.
-    
-2.  Inicia y habilita servicios como `Tomcat`.
-    
-3.  Clona el código fuente.
-    
-4.  Ejecuta `mvn install`.
-    
-5.  Despliega el artefacto (WAR).
-    
-6.  Configura NGINX (`nginx.sh`) y desactiva el sitio por defecto.
