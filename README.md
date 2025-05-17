@@ -1,8 +1,8 @@
-# 🚀 DevOps VProfile Monolithic Project v2
+# 🚀 Proyecto DevOps VProfile v2 (Monolítico On-Premise)
 
 # Introducción
 
-## 🧱 VProfile Project - Configuración Local (Aprovisionamiento Automatizado con Vagrant)
+## 🧱 VProfile Project - On-Premise con Aprovisionamiento Automatizado con Vagrant
 
 ----------
 
